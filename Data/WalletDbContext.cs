@@ -14,7 +14,6 @@ public class WalletDbContext(DbContextOptions<WalletDbContext> options)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Precision configurations
         modelBuilder.Entity<Wallet>()
             .Property(w => w.Balance)
             .HasPrecision(18, 2);
@@ -23,32 +22,29 @@ public class WalletDbContext(DbContextOptions<WalletDbContext> options)
             .Property(t => t.Amount)
             .HasPrecision(18, 2);
 
-        // Relationships
         modelBuilder.Entity<Transaction>()
             .HasOne(t => t.Wallet)
             .WithMany(w => w.Transactions)
             .HasForeignKey(t => t.WalletId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Seed sample Wallets (using lowercase 'id' and 'OwnerName')
         modelBuilder.Entity<Wallet>().HasData(
             new Wallet
             {
-                id = 1,
+                Id = 1,
                 OwnerName = "Kelvin Jaston",
                 Balance = 50000.00m,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             },
             new Wallet
             {
-                id = 2,
+                Id = 2,
                 OwnerName = "John Doe",
                 Balance = 150000.00m,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
 
-        // Seed sample Transactions (matched strictly to your Transaction model properties)
         modelBuilder.Entity<Transaction>().HasData(
             new Transaction
             {

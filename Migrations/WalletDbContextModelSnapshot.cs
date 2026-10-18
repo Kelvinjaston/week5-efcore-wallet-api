@@ -71,11 +71,11 @@ namespace WalletManagement.Api.Migrations
 
             modelBuilder.Entity("WalletManagement.Api.Models.Wallet", b =>
                 {
-                    b.Property<int>("id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Balance")
                         .HasPrecision(18, 2)
@@ -88,21 +88,21 @@ namespace WalletManagement.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("id");
+                    b.HasKey("Id");
 
                     b.ToTable("Wallets");
 
                     b.HasData(
                         new
                         {
-                            id = 1,
+                            Id = 1,
                             Balance = 50000.00m,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             OwnerName = "Kelvin Jaston"
                         },
                         new
                         {
-                            id = 2,
+                            Id = 2,
                             Balance = 150000.00m,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             OwnerName = "John Doe"

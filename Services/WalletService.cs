@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿
+using Microsoft.EntityFrameworkCore;
 using WalletManagement.Api.Data;
 using WalletManagement.Api.DTOs;
 using WalletManagement.Api.Models;
@@ -13,7 +14,7 @@ public class WalletService(WalletDbContext context) : IWalletService
             .Include(w => w.Transactions)
             .Select(w => new WalletResponseDto
             {
-                Id = w.id,
+                Id = w.Id,
                 OwnerName = w.OwnerName,
                 Balance = w.Balance,
                 CreatedAt = w.CreatedAt,
@@ -33,13 +34,13 @@ public class WalletService(WalletDbContext context) : IWalletService
     {
         var wallet = await context.Wallets
             .Include(w => w.Transactions)
-            .FirstOrDefaultAsync(w => w.id == id);
+            .FirstOrDefaultAsync(w => w.Id == id);
 
         if (wallet == null) return null;
 
         return new WalletResponseDto
         {
-            Id = wallet.id,
+            Id = wallet.Id,
             OwnerName = wallet.OwnerName,
             Balance = wallet.Balance,
             CreatedAt = wallet.CreatedAt,
@@ -56,21 +57,22 @@ public class WalletService(WalletDbContext context) : IWalletService
 
     public async Task<WalletResponseDto> CreateWalletAsync(CreateWalletDto dto)
     {
+        var now = DateTime.UtcNow;
+
         var wallet = new Wallet
         {
             OwnerName = dto.OwnerName,
             Balance = dto.InitialBalance,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = now
         };
 
-        // If an initial balance is provided, record it as an opening credit transaction
         if (dto.InitialBalance > 0)
         {
             wallet.Transactions.Add(new Transaction
             {
                 Type = "Credit",
                 Amount = dto.InitialBalance,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = now
             });
         }
 
@@ -79,7 +81,7 @@ public class WalletService(WalletDbContext context) : IWalletService
 
         return new WalletResponseDto
         {
-            Id = wallet.id,
+            Id = wallet.Id,
             OwnerName = wallet.OwnerName,
             Balance = wallet.Balance,
             CreatedAt = wallet.CreatedAt,
