@@ -1,9 +1,9 @@
-Wallet Management API
-A RESTful API built with ASP.NET Core Web API, Entity Framework Core, and PostgreSQL to practise database access, data modelling, migrations, and wallet-related operations in .NET.
+Wallet Management API & Test Suite
+A RESTful API built with ASP.NET Core Web API, Entity Framework Core, and PostgreSQL to practise database access, data modelling, migrations, and wallet-related operations, complete with an automated unit test suite.
 
 Overview
 The Wallet Management API models digital wallets and their financial transactions. It demonstrates how an ASP.NET Core application can interact with a relational database using Entity Framework Core.
-This project was built as part of my Week 5 backend development learning activities, focusing on data access in .NET.
+This workspace is structured as a unified solution (.slnx) managing both the core Web API and its corresponding test suite side-by-side. It was built as part of my Week 5 backend development learning activities, focusing on data access, architectural organization, and testing in .NET.
 
 Technologies Used
 - C# – Programming language
@@ -11,8 +11,10 @@ Technologies Used
 - Entity Framework Core 10 – Object-relational mapping (ORM)
 - PostgreSQL – Relational database
 - Npgsql – PostgreSQL provider for Entity Framework Core
+- xUnit / .NET Testing – Automated unit and query testing
 - DTOs – Data transfer between API endpoints and clients
 - EF Core Migrations – Database schema management
+- Modern .slnx Format – Unified Visual Studio solution layout
 
 Features
 - Wallet and transaction data models
@@ -24,8 +26,15 @@ Features
 - DTOs for wallet and transaction operations
 - Service layer for wallet-related business logic
 - REST API endpoints for wallet operations
+- Automated test project (WalletManagement.Tests) validating core query and business logic
 
 Project Structure
+repos/
+├── WalletManagement.Api/          # Web API project (Controllers, Services, EF Core DbContext)
+├── WalletManagement.Tests/        # Unit & query test suite
+├── WalletManagement.Api.slnx      # Unified Visual Studio Solution
+└── .gitignore                     # Root workspace Git ignore rules
+
 WalletManagement.Api/
 ├── Controllers/
 │   └── WalletsController.cs
@@ -77,15 +86,15 @@ Prerequisites
 Make sure you have the following installed:
 - .NET 10 SDK
 - PostgreSQL
-- An API testing tool such as Swagger UI or Postman
+- Visual Studio 2026, VS Code, or .NET CLI
 
 1. Clone the Repository
 git clone https://github.com/Kelvinjaston/week5-efcore-wallet-api.git
 cd week5-efcore-wallet-api
 
 2. Install Dependencies
-Restore the project dependencies:
-dotnet restore
+Restore the project dependencies across the solution:
+dotnet restore WalletManagement.Api.slnx
 
 3. Configure the Database
 Create a PostgreSQL database named WalletManagementDb.
@@ -96,12 +105,19 @@ Security note: Do not commit real database passwords or other secrets to GitHub.
 Install the EF Core command-line tool if necessary:
 dotnet tool install --global dotnet-ef --version 10.0.0
 Apply the existing migrations:
-dotnet ef database update
+dotnet ef database update --project WalletManagement.Api
 Run this command from the directory containing WalletManagement.Api.csproj.
 
 5. Run the API
-dotnet run
-Use the local URL printed in the terminal. In Development mode, the OpenAPI document is available at /openapi/v1.json. Swagger UI is available only if it has been configured separately in the project.
+dotnet run --project WalletManagement.Api
+Use the local URL printed in the terminal. In Development mode, the OpenAPI document is available at /openapi/v1.json.
+
+Running Tests
+To run the complete test suite across the unified solution:
+dotnet test WalletManagement.Api.slnx
+
+Or run tests specifically for the test project:
+dotnet test WalletManagement.Tests/WalletManagement.Tests.csproj
 
 API Testing
 You can test the available endpoints using Postman or another HTTP client.
@@ -115,10 +131,9 @@ This project helped me practise:
 - Configuring PostgreSQL connectivity
 - Creating and applying database migrations
 - Organising API code with controllers, DTOs, and services
-- Understanding how database-backed APIs are structured in .NET
+- Setting up a modern multi-project .slnx solution layout and writing automated tests
 
 Future Improvements
-- Add comprehensive unit and integration tests
-- Expand transaction handling and validation
-- Improve error handling and API documentation
-- Add more advanced wallet and transaction queries
+- Expand transaction handling, validation rules, and error middleware
+- Implement advanced wallet filtering and transaction history queries
+- Add containerization support via Docker Compose
