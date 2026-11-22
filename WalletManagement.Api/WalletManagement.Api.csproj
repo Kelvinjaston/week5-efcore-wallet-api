@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>907974b8-00c2-4729-b761-e58e73a7df81</UserSecretsId>
   </PropertyGroup>
 
   <!-- Nested folders are separate projects or unrelated code: keep them out of the API build -->
