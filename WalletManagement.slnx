@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="WalletManagement.Api/WalletManagement.Api.csproj" />
+  <Project Path="WalletManagement.Client/WalletManagement.Client.csproj" />
+  <Project Path="WalletManagement.Tests/WalletManagement.Tests.csproj" />
+</Solution>
