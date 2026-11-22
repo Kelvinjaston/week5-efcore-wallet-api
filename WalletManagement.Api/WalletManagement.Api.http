@@ -1,6 +1,54 @@
 @WalletManagement.Api_HostAddress = http://localhost:5181
 
-GET {{WalletManagement.Api_HostAddress}}/weatherforecast/
+### Create a wallet
+POST {{WalletManagement.Api_HostAddress}}/api/Wallets
+Content-Type: application/json
+
+{
+  "ownerName": "Ada Lovelace",
+  "initialBalance": 1000
+}
+
+### List all wallets
+GET {{WalletManagement.Api_HostAddress}}/api/Wallets
 Accept: application/json
 
-###
+### Get one wallet
+GET {{WalletManagement.Api_HostAddress}}/api/Wallets/1
+Accept: application/json
+
+### Deposit
+POST {{WalletManagement.Api_HostAddress}}/api/Wallets/1/deposit
+Content-Type: application/json
+
+{ "amount": 250 }
+
+### Withdraw
+POST {{WalletManagement.Api_HostAddress}}/api/Wallets/1/withdraw
+Content-Type: application/json
+
+{ "amount": 100 }
+
+### Query: high-value wallets
+GET {{WalletManagement.Api_HostAddress}}/api/WalletQueries/high-value?minBalance=1000
+
+### Query: total system liquidity
+GET {{WalletManagement.Api_HostAddress}}/api/WalletQueries/liquidity
+
+### Query: most active wallets
+GET {{WalletManagement.Api_HostAddress}}/api/WalletQueries/most-active?topCount=5
+
+### Query: top transactions
+GET {{WalletManagement.Api_HostAddress}}/api/WalletQueries/top-transactions?topCount=5
+
+### Query: dormant wallets
+GET {{WalletManagement.Api_HostAddress}}/api/WalletQueries/dormant
+
+### Query: cash flow per wallet
+GET {{WalletManagement.Api_HostAddress}}/api/WalletQueries/cash-flow
+
+### Query: transactions in a date range
+GET {{WalletManagement.Api_HostAddress}}/api/WalletQueries/1/transactions-range?startDate=2026-01-01T00:00:00Z&endDate=2026-12-31T23:59:59Z
+
+### Query: recent high-balance wallets
+GET {{WalletManagement.Api_HostAddress}}/api/WalletQueries/recent-high-balance?minBalance=500&days=30

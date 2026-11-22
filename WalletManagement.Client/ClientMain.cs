@@ -1,46 +1,88 @@
-﻿namespace WalletManagement.Api.WalletManagement.Client
+﻿using System.Net.Http.Json;
+using System.Text.Json;
+
+namespace WalletManagement.Client;
+
+public record TransactionDto(int Id, int WalletId, string Type, decimal Amount, DateTime CreatedAt);
+public record WalletDto(int Id, string OwnerName, decimal Balance, DateTime CreatedAt, List<TransactionDto> Transactions);
+
+public class ClientMain
 {
-    public class ClientMain
+    private static readonly JsonSerializerOptions PrettyJson = new() { WriteIndented = true };
+
+    public static async Task Main(string[] args)
     {
-        public static async Task Main(string[] args)
+        var baseUrl = args.Length > 0 ? args[0] : "http://localhost:5181";
+        using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
+
+        Console.WriteLine($"=== Wallet Management Client -> {baseUrl} ===");
+
+        try
         {
-            var client = new HttpClient
-            {
-                BaseAddress = new Uri("http://localhost:5000")
-            };
+            var wallet = await CreateWalletAsync(client, "Ada Lovelace", 1000m);
+            if (wallet is null) return;
 
-            Console.WriteLine("=== Wallet Management Client Starting ===");
+            await SendAmountAsync(client, wallet.Id, "deposit", 250m);
+            await SendAmountAsync(client, wallet.Id, "withdraw", 100m);
+            await SendAmountAsync(client, wallet.Id, "withdraw", 1_000_000m); 
 
-            string walletId = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-            await GetWalletDetailsAsync(client, walletId);
-
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+            await PrintGetAsync(client, $"/api/Wallets/{wallet.Id}", "Wallet details");
+            await PrintGetAsync(client, "/api/Wallets", "All wallets");
+            await PrintGetAsync(client, "/api/WalletQueries/high-value?minBalance=500", "High-value wallets");
+            await PrintGetAsync(client, "/api/WalletQueries/liquidity", "Total system liquidity");
         }
-
-        private static async Task GetWalletDetailsAsync(HttpClient httpClient, string walletId)
+        catch (HttpRequestException ex)
         {
-            try
-            {
-                Console.WriteLine($"Fetching details for wallet ID: {walletId}...");
-                HttpResponseMessage response = await httpClient.GetAsync($"/api/walletqueries/{walletId}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine("\n[Success] API Response:");
-                    Console.WriteLine(jsonResponse);
-                }
-                else
-                {
-                    Console.WriteLine($"\n[Error] Failed with status code: {response.StatusCode}");
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                Console.WriteLine($"\n[Network Exception] Ensure the API is running: {ex.Message}");
-            }
+            Console.WriteLine($"[Network error] Is the API running? {ex.Message}");
         }
     }
-}
 
+    private static async Task<WalletDto?> CreateWalletAsync(HttpClient client, string owner, decimal initialBalance)
+    {
+        Console.WriteLine($"\nPOST /api/Wallets ({owner}, {initialBalance})");
+        var response = await client.PostAsJsonAsync("/api/Wallets",
+            new { OwnerName = owner, InitialBalance = initialBalance });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await PrintFailureAsync(response);
+            return null;
+        }
+
+        var wallet = await response.Content.ReadFromJsonAsync<WalletDto>();
+        Console.WriteLine($"[{(int)response.StatusCode}] Created wallet {wallet!.Id} with balance {wallet.Balance}");
+        return wallet;
+    }
+
+    private static async Task SendAmountAsync(HttpClient client, int walletId, string action, decimal amount)
+    {
+        Console.WriteLine($"\nPOST /api/Wallets/{walletId}/{action} (amount {amount})");
+        var response = await client.PostAsJsonAsync($"/api/Wallets/{walletId}/{action}", new { Amount = amount });
+
+        if (response.IsSuccessStatusCode)
+            Console.WriteLine($"[{(int)response.StatusCode}] {await response.Content.ReadAsStringAsync()}");
+        else
+            await PrintFailureAsync(response);
+    }
+
+    private static async Task PrintGetAsync(HttpClient client, string url, string title)
+    {
+        Console.WriteLine($"\nGET {url}  ({title})");
+        var response = await client.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await PrintFailureAsync(response);
+            return;
+        }
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Console.WriteLine($"[{(int)response.StatusCode}]");
+        Console.WriteLine(JsonSerializer.Serialize(doc.RootElement, PrettyJson));
+    }
+
+    private static async Task PrintFailureAsync(HttpResponseMessage response)
+    {
+        Console.WriteLine($"[{(int)response.StatusCode} {response.ReasonPhrase}] {await response.Content.ReadAsStringAsync()}");
+    }
+}
