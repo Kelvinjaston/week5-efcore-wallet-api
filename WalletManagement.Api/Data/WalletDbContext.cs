@@ -63,5 +63,8 @@ public class WalletDbContext(DbContextOptions<WalletDbContext> options)
                 CreatedAt = new DateTime(2026, 1, 3, 14, 15, 0, DateTimeKind.Utc)
             }
         );
+        modelBuilder.Entity<Wallet>().HasIndex(w => w.Balance);
+        modelBuilder.Entity<Transaction>().HasIndex(t => new { t.WalletId, t.CreatedAt });
+        modelBuilder.Entity<Transaction>().HasIndex(t => t.Amount).IsDescending();
     }
 }

@@ -46,7 +46,10 @@ namespace WalletManagement.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WalletId");
+                    b.HasIndex("Amount")
+                        .IsDescending();
+
+                    b.HasIndex("WalletId", "CreatedAt");
 
                     b.ToTable("Transactions");
 
@@ -89,6 +92,8 @@ namespace WalletManagement.Api.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Balance");
 
                     b.ToTable("Wallets");
 
