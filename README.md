@@ -228,6 +228,47 @@ A wallet has many transactions; each transaction belongs to one wallet.
 - Exposing a domain as a REST API and consuming it from a client
 - Writing automated tests in a multi-project `.slnx` solution
 
+## Concurrency and transactions (DDIA Chapter 7)
+
+### The problem: lost updates
+
+A withdrawal is a read-modify-write: read the balance, check it, subtract, save. If two requests do this at the same moment, both read the same balance, both pass the check, and the second save overwrites the first. PostgreSQL's default isolation level (Read Committed) does not stop this, because each request is a separate, valid transaction.
+
+I wrote a demo that sends 20 simultaneous withdrawals of 30 to a wallet holding 100. Only three should succeed.
+
+```
+dotnet run --project WalletManagement.Client -- race
+```
+
+| | Without the fix | With the fix |
+|---|---|---|
+| Withdrawals that succeeded | 11 | 3 |
+| Rejected (insufficient funds) | 9 | 17 |
+| Final balance | 10.00 (should be -230 if 11 had really happened) | 10.00 |
+| Debit rows in the ledger | 11 | 3 |
+| Result | FAIL: balance and ledger disagree, wallet overdrawn | PASS |
+
+### The fix: optimistic concurrency
+
+- `Wallet.Version` is mapped to PostgreSQL's `xmin` system column, which changes every time a row is updated (`IsRowVersion()` in `WalletDbContext`).
+- EF Core adds `WHERE xmin = <the value I read>` to every wallet update. If another request changed the row first, no row matches and EF throws `DbUpdateConcurrencyException`.
+- `DepositAsync` and `WithdrawAsync` catch it, discard the stale copy, wait a short random time, re-read the wallet and redo the whole check, up to 10 attempts. The balance check therefore always runs against fresh data.
+- The balance update and the new transaction row are saved in a single `SaveChanges` call, which EF runs in one database transaction, so either both happen or neither does (the A in ACID).
+
+### Alternatives I considered
+
+- `SELECT ... FOR UPDATE` (pessimistic locking) makes requests queue on the row, which is simpler but holds locks while the app works.
+- A single atomic `UPDATE ... WHERE Balance >= amount` avoids the race in SQL, but it bypasses EF's change tracking and needs a separate insert for the transaction row.
+- Serializable isolation also prevents it, but needs the same retry logic and costs more.
+
+I chose optimistic concurrency because conflicts on a single wallet are rare in normal use, so most requests pay nothing.
+
+### Faults and consistency (Chapters 8 and 9)
+
+- The API runs against one PostgreSQL node, so there are no replicas to disagree with each other and reads always see the latest committed write.
+- If a client retries a deposit after a network timeout, it could be applied twice. An idempotency key on deposit and withdraw would fix that.
+- A request that loses all 10 retries currently surfaces as a server error. Returning `409 Conflict` instead is future work.
+
 ## Future improvements
 
 - Add a concurrency token to prevent overdrafts under load
