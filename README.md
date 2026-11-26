@@ -229,7 +229,25 @@ A wallet has many transactions; each transaction belongs to one wallet.
 - Organising an API with controllers, DTOs and services
 - Exposing a domain as a REST API and consuming it from a client
 - Writing automated tests in a multi-project `.slnx` solution
+- Adding indexes to PostgreSQL tables and measuring their effect on reads and writes
+- Preventing lost updates with optimistic concurrency
 
+## Indexes and query performance (DDIA Chapters 3 and 4)
+
+I added three indexes with the `AddQueryIndexes` migration and timed four queries with `EXPLAIN (ANALYZE, BUFFERS)` on 50,003 wallets and 700,005 transactions:
+
+- `IX_Wallets_Balance` on `Balance`
+- `IX_Transactions_WalletId_CreatedAt` on `(WalletId, CreatedAt)`, which replaces the old `WalletId`-only index
+- `IX_Transactions_Amount` on `Amount`, descending
+
+| Query | Before | After |
+|---|---|---|
+| Wallets with balance over 9500 | 18.0 ms | 0.7 ms |
+| One busy wallet, last 7 days | 160 ms | 1.5 ms |
+| Top 5 transactions by amount | 83.8 ms | 0.02 ms |
+| Total per wallet and type (control) | 835 ms | 524 ms, no index used |
+
+The cost is on the write side: inserting 100,000 transactions took about 78% longer in the insert step (954 ms to 1,694 ms), because every new row also goes into the extra indexes. These are single runs on a laptop with random data, so trust the big gaps more than the small ones.
 ## Concurrency and transactions (DDIA Chapter 7)
 
 ### The problem: lost updates
