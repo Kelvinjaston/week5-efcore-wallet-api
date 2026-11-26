@@ -54,7 +54,7 @@ cd ..
 
 `appsettings.json` only contains a placeholder. Never commit real credentials.
 
-### 3. Apply migrations
+### 3. Apply migrations (optional: the API also does this on startup)
 
 ```bash
 dotnet tool install --global dotnet-ef --version 10.0.0
@@ -67,7 +67,7 @@ dotnet ef database update --project WalletManagement.Api
 dotnet run --project WalletManagement.Api
 ```
 
-The console prints the listening address (for example `http://localhost:5181`). In Development, the OpenAPI document is served at `/openapi/v1.json` (and Swagger UI at `/swagger` if enabled in `Program.cs`).
+The console prints the listening address (for example `http://localhost:5181`). In Development, Swagger UI is at `/swagger` and the OpenAPI document at `/swagger/v1/swagger.json`.
 
 ### 5. Run the client
 
@@ -80,6 +80,8 @@ dotnet run --project WalletManagement.Client -- http://localhost:5181
 ```
 
 The client creates a wallet, deposits, withdraws (including one request that is expected to fail), then reads the wallet back and calls two query endpoints.
+
+Run it with `race` to start the concurrent-withdrawal demo described below: `dotnet run --project WalletManagement.Client -- race`.
 
 ### 6. Run the tests
 
@@ -207,7 +209,7 @@ curl "http://localhost:5181/api/WalletQueries/1/transactions-range?startDate=202
 
 ## Data models
 
-**Wallet**: `Id`, `OwnerName`, `Balance`, `CreatedAt`, `Transactions` (collection).
+**Wallet**: `Id`, `OwnerName`, `Balance`, `CreatedAt`, `Transactions` (collection), `Version` (row version, mapped to PostgreSQL `xmin`).
 
 **Transaction**: `Id`, `WalletId` (foreign key), `Wallet` (navigation), `Type` (`Credit` or `Debit`), `Amount`, `CreatedAt`.
 
@@ -216,7 +218,7 @@ A wallet has many transactions; each transaction belongs to one wallet.
 ## Notes and known limitations
 
 - Deposit and withdraw return `400` for every failure, including an unknown wallet id (not `404`).
-- Concurrent withdrawals are not protected by a concurrency token, so two simultaneous requests could overdraw a wallet.
+- A request that loses the concurrency check ten times in a row returns an error, and the client should retry (see the concurrency section).
 - Use UTC timestamps (ending in `Z`) for date parameters.
 
 ## Learning objectives
@@ -271,6 +273,8 @@ I chose optimistic concurrency because conflicts on a single wallet are rare in 
 
 ## Future improvements
 
-- Add a concurrency token to prevent overdrafts under load
+- Add idempotency keys to deposit and withdraw, so a retried request is not applied twice
 - Return specific status codes (`404`, `409`) for different failure reasons
+- Add paging to `GET /api/Wallets`
+- Replace the transaction-type strings with an enum
 - Add Docker Compose support
