@@ -1,5 +1,4 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WalletManagement.Api.Data;
 using WalletManagement.Api.DTOs;
 using WalletManagement.Api.Models;
@@ -8,6 +7,8 @@ namespace WalletManagement.Api.Services;
 
 public class WalletService(WalletDbContext context) : IWalletService
 {
+    private const int MaxConcurrencyRetries = 10;
+
     public async Task<IEnumerable<WalletResponseDto>> GetAllWalletsAsync()
     {
         return await context.Wallets
@@ -29,7 +30,6 @@ public class WalletService(WalletDbContext context) : IWalletService
             })
             .ToListAsync();
     }
-
     public async Task<WalletResponseDto?> GetWalletByIdAsync(int id)
     {
         var wallet = await context.Wallets
@@ -54,7 +54,6 @@ public class WalletService(WalletDbContext context) : IWalletService
             }).ToList()
         };
     }
-
     public async Task<WalletResponseDto> CreateWalletAsync(CreateWalletDto dto)
     {
         var now = DateTime.UtcNow;
@@ -95,42 +94,66 @@ public class WalletService(WalletDbContext context) : IWalletService
             }).ToList()
         };
     }
-
     public async Task<bool> DepositAsync(int walletId, decimal amount)
     {
-        var wallet = await context.Wallets.FindAsync(walletId);
-        if (wallet == null || amount <= 0) return false;
+        if (amount <= 0) return false;
 
-        wallet.Balance += amount;
-
-        context.Transactions.Add(new Transaction
+        for (var attempt = 1; ; attempt++)
         {
-            WalletId = walletId,
-            Type = "Credit",
-            Amount = amount,
-            CreatedAt = DateTime.UtcNow
-        });
+            var wallet = await context.Wallets.FindAsync(walletId);
+            if (wallet == null) return false;
 
-        await context.SaveChangesAsync();
-        return true;
+            wallet.Balance += amount;
+
+            context.Transactions.Add(new Transaction
+            {
+                WalletId = walletId,
+                Type = "Credit",
+                Amount = amount,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            try
+            {
+                await context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < MaxConcurrencyRetries)
+            {
+                context.ChangeTracker.Clear();
+                await Task.Delay(Random.Shared.Next(5, 40));
+            }
+        }
     }
-
     public async Task<bool> WithdrawAsync(int walletId, decimal amount)
     {
-        var wallet = await context.Wallets.FindAsync(walletId);
-        if (wallet == null || amount <= 0 || wallet.Balance < amount) return false;
+        if (amount <= 0) return false;
 
-        wallet.Balance -= amount;
-
-        context.Transactions.Add(new Transaction
+        for (var attempt = 1; ; attempt++)
         {
-            WalletId = walletId,
-            Type = "Debit",
-            Amount = amount,
-            CreatedAt = DateTime.UtcNow
-        });
+            var wallet = await context.Wallets.FindAsync(walletId);
+            if (wallet == null || wallet.Balance < amount) return false;
 
-        await context.SaveChangesAsync();
-        return true;
+            wallet.Balance -= amount;
+
+            context.Transactions.Add(new Transaction
+            {
+                WalletId = walletId,
+                Type = "Debit",
+                Amount = amount,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            try
+            {
+                await context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < MaxConcurrencyRetries)
+            {
+                context.ChangeTracker.Clear();
+                await Task.Delay(Random.Shared.Next(5, 40));
+            }
+        }
     }
 }

@@ -21,11 +21,11 @@ builder.Services.AddDbContext<WalletDbContext>(options =>
 
 var app = builder.Build();
 
-// Automatically apply database creation/migrations on startup so tables exist
+// Apply any pending migrations on startup so the tables and indexes exist
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<WalletDbContext>();
-    dbContext.Database.EnsureCreated();
+    dbContext.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline.

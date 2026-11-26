@@ -91,6 +91,12 @@ namespace WalletManagement.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Balance");
@@ -103,14 +109,16 @@ namespace WalletManagement.Api.Migrations
                             Id = 1,
                             Balance = 50000.00m,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            OwnerName = "Kelvin Jaston"
+                            OwnerName = "Kelvin Jaston",
+                            Version = 0u
                         },
                         new
                         {
                             Id = 2,
                             Balance = 150000.00m,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            OwnerName = "John Doe"
+                            OwnerName = "John Doe",
+                            Version = 0u
                         });
                 });
 

@@ -12,19 +12,26 @@ public class ClientMain
 
     public static async Task Main(string[] args)
     {
-        var baseUrl = args.Length > 0 ? args[0] : "http://localhost:5181";
+        var baseUrl = Array.Find(args, a => a.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                      ?? "http://localhost:5181";
         using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
 
         Console.WriteLine($"=== Wallet Management Client -> {baseUrl} ===");
 
         try
         {
+            if (Array.IndexOf(args, "race") >= 0)
+            {
+                await RaceDemo.RunAsync(client);
+                return;
+            }
+
             var wallet = await CreateWalletAsync(client, "Ada Lovelace", 1000m);
             if (wallet is null) return;
 
             await SendAmountAsync(client, wallet.Id, "deposit", 250m);
             await SendAmountAsync(client, wallet.Id, "withdraw", 100m);
-            await SendAmountAsync(client, wallet.Id, "withdraw", 1_000_000m); 
+            await SendAmountAsync(client, wallet.Id, "withdraw", 1_000_000m); // expected to fail: insufficient balance
 
             await PrintGetAsync(client, $"/api/Wallets/{wallet.Id}", "Wallet details");
             await PrintGetAsync(client, "/api/Wallets", "All wallets");
@@ -36,7 +43,6 @@ public class ClientMain
             Console.WriteLine($"[Network error] Is the API running? {ex.Message}");
         }
     }
-
     private static async Task<WalletDto?> CreateWalletAsync(HttpClient client, string owner, decimal initialBalance)
     {
         Console.WriteLine($"\nPOST /api/Wallets ({owner}, {initialBalance})");
@@ -64,7 +70,6 @@ public class ClientMain
         else
             await PrintFailureAsync(response);
     }
-
     private static async Task PrintGetAsync(HttpClient client, string url, string title)
     {
         Console.WriteLine($"\nGET {url}  ({title})");
