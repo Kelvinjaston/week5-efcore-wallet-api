@@ -22,9 +22,9 @@ namespace WalletManagement.Tests
             context.Wallets.AddRange(wallet1, wallet2);
 
             context.Transactions.AddRange(
-                new Transaction { Id = 1, WalletId = 1, Type = "Deposit", Amount = 500m, CreatedAt = DateTime.UtcNow },
-                new Transaction { Id = 2, WalletId = 1, Type = "Withdrawal", Amount = 100m, CreatedAt = DateTime.UtcNow },
-                new Transaction { Id = 3, WalletId = 2, Type = "Deposit", Amount = 300m, CreatedAt = DateTime.UtcNow }
+                new Transaction { Id = 1, WalletId = 1, Type = "Credit", Amount = 500m, CreatedAt = DateTime.UtcNow },
+                new Transaction { Id = 2, WalletId = 1, Type = "Debit", Amount = 100m, CreatedAt = DateTime.UtcNow },
+                new Transaction { Id = 3, WalletId = 2, Type = "Credit", Amount = 300m, CreatedAt = DateTime.UtcNow }
             );
 
             context.SaveChanges();

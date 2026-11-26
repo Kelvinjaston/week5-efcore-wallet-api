@@ -88,8 +88,8 @@ namespace WalletManagement.Api.Queries
                 .Select(g => new
                 {
                     WalletId = g.Key,
-                    TotalDeposits = g.Where(t => t.Type == "Deposit").Sum(t => (decimal?)t.Amount) ?? 0,
-                    TotalWithdrawals = g.Where(t => t.Type == "Withdrawal").Sum(t => (decimal?)t.Amount) ?? 0
+                    TotalDeposits = g.Where(t => t.Type == "Credit").Sum(t => (decimal?)t.Amount) ?? 0,
+                    TotalWithdrawals = g.Where(t => t.Type == "Debit").Sum(t => (decimal?)t.Amount) ?? 0
                 })
                 .ToListAsync();
         }
