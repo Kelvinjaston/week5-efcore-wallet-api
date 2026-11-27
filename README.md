@@ -234,7 +234,7 @@ A wallet has many transactions; each transaction belongs to one wallet.
 
 ## Indexes and query performance (DDIA Chapters 3 and 4)
 
-I added three indexes with the `AddQueryIndexes` migration and timed four queries with `EXPLAIN (ANALYZE, BUFFERS)` on 50,003 wallets and 700,005 transactions:
+I added three indexes with the `AddQueryIndexes` migration and timed four queries with `EXPLAIN (ANALYZE, BUFFERS)` on about 50,000 wallets and 500,000 to 700,000 transactions (I added 200,000 rows for one wallet partway through):
 
 - `IX_Wallets_Balance` on `Balance`
 - `IX_Transactions_WalletId_CreatedAt` on `(WalletId, CreatedAt)`, which replaces the old `WalletId`-only index
@@ -247,7 +247,8 @@ I added three indexes with the `AddQueryIndexes` migration and timed four querie
 | Top 5 transactions by amount | 83.8 ms | 0.02 ms |
 | Total per wallet and type (control) | 835 ms | 524 ms, no index used |
 
-The cost is on the write side: inserting 100,000 transactions took about 78% longer in the insert step (954 ms to 1,694 ms), because every new row also goes into the extra indexes. These are single runs on a laptop with random data, so trust the big gaps more than the small ones.
+The cost is on the write side: inserting 100,000 transactions took about 78% longer in the insert step (954 ms to 1,694 ms), because every new row also goes into the extra indexes. These are only a few runs on a laptop with random data, so trust the big gaps more than the small ones.
+
 ## Concurrency and transactions (DDIA Chapter 7)
 
 ### The problem: lost updates
